@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Web;
 
@@ -30,11 +31,19 @@ namespace LoadRunner
 
             var requests = new RequestCounter(SimultaneousRequests, BaseUrl, Min, Max, UseFunction);
             var sw = Stopwatch.StartNew();
-            await requests.MakeRequests(NumberOfRequests);
+            var task = requests.MakeRequests(NumberOfRequests);
+            var mainPage = new RequestCounter("http://localhost:56053");
+            var mainPageTask = mainPage.MakeRecurringRequest();
+            await task;
             sw.Stop();
 
-            double avg = requests.TotalTime / NumberOfRequests;
-            Console.WriteLine($"Successfully completed {requests.SuccessfulRequests}/{NumberOfRequests} requests in {sw.ElapsedMilliseconds}ms, avg/request: {avg}");
+            mainPage.Stop();
+            await mainPageTask;
+
+            double requestAvg = requests.TotalTime / NumberOfRequests;
+            double mainPageAvg = mainPage.TotalTime / mainPage.SuccessfulRequests;
+            Console.WriteLine($"Successfully completed {requests.SuccessfulRequests}/{NumberOfRequests} requests in {sw.ElapsedMilliseconds}ms, avg/request: {requestAvg}");
+            Console.WriteLine($"Main page was loaded {mainPage.SuccessfulRequests} with an average load time of {mainPageAvg}");
         }
     }
 
@@ -63,11 +72,38 @@ namespace LoadRunner
         int _simultaneousRequests;
         string _url;
 
+        CancellationTokenSource _tokenSource;
+
+        public RequestCounter(string url)
+        {
+            _url = url;
+        }
+
         public RequestCounter(int simultaneousRequests, string url, int min, int max, bool useFunction)
         {
             _simultaneousRequests = simultaneousRequests;
             _url = string.Format(url, min, max, useFunction);
 
+        }
+
+        public void Stop()
+        {
+            if (_tokenSource != null)
+            {
+                _tokenSource.Cancel();
+            }
+        }
+
+        public async Task MakeRecurringRequest()
+        {
+            _tokenSource = new CancellationTokenSource();
+            CancellationToken token = _tokenSource.Token;
+
+            while (!token.IsCancellationRequested)
+            {
+                await MakeRequest();
+                await Task.Delay(1000);
+            }
         }
 
         public async Task MakeRequests(int numberOfRequests)
