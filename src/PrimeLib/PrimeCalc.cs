@@ -9,18 +9,25 @@ namespace PrimeLib
 {
     public static class PrimeCalc
     {
-        public static string FindPrimesAsJson(long min, long max)
+        public static string GetPrimesAsJson(long min, long max)
+        {
+            List<long> primes = GetPrimes(min, max);
+
+            return JsonConvert.SerializeObject(primes);
+        }
+
+        public static List<long> GetPrimes(long min, long max)
         {
             var primes = new List<long>();
             for (long x = min; x <= max; x++)
             {
-                if (PrimeCalc.IsPrime(x))
+                if (IsPrime(x))
                 {
                     primes.Add(x);
                 }
             }
 
-            return JsonConvert.SerializeObject(primes);
+            return primes;
         }
 
         public static bool IsPrime(long n)

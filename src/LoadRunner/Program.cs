@@ -11,7 +11,7 @@ namespace LoadRunner
 {
     class Program
     {
-        static void Main(string[] args)
+        static async void Main(string[] args)
         {
             const int NumberOfRequests = 100;
             const int Min = 1000000;
@@ -22,12 +22,12 @@ namespace LoadRunner
 
             var sw = Stopwatch.StartNew();
 
-            Parallel.For(0, NumberOfRequests, i =>
+            Parallel.For(0, NumberOfRequests, async i =>
             {
                 try
                 {
                     var req = WebRequest.Create(BaseUrl);
-                    var resp = req.GetResponse() as HttpWebResponse;
+                    var resp = await req.GetResponseAsync() as HttpWebResponse;
                     if (resp.StatusCode == HttpStatusCode.OK)
                     {
                         lock (sw)

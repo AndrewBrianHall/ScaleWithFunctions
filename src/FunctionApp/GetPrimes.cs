@@ -24,7 +24,7 @@ namespace FunctionApp
                 .FirstOrDefault(q => string.Compare(q.Key, "Max", true) == 0)
                 .Value);
 
-            var primes = PrimeCalc.FindPrimesAsJson(min, max);
+            var primes = PrimeCalc.GetPrimesAsJson(min, max);
             
 
             return req.CreateResponse(HttpStatusCode.OK, primes);
