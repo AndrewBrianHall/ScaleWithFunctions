@@ -19,8 +19,10 @@ namespace LoadRunner
         object _lockObj = new object();
         int _simultaneousRequests;
         bool _logRequests;
+        CancellationTokenSource _tokenSource;
 
         public List<RequestRecord> RequestHistory = new List<RequestRecord>();
+        public Stopwatch RequestStopWatch { get; private set; }
 
         private long _totalTime = 0;
         public long TotalTime
@@ -42,8 +44,6 @@ namespace LoadRunner
         }
 
         public string Url { get; set; }
-
-        CancellationTokenSource _tokenSource;
 
         public RequestCounter(string url, bool logRequests)
         {
@@ -89,13 +89,14 @@ namespace LoadRunner
         public async Task MakeRequests(int numberOfRequests)
         {
             var tasks = new List<Task>();
-
+            RequestStopWatch = Stopwatch.StartNew();
             for (int i = 0; i < _simultaneousRequests; i++)
             {
                 var task = NextRequest(numberOfRequests);
                 tasks.Add(task);
             }
             await Task.WhenAll(tasks);
+            RequestStopWatch.Stop();
         }
 
         async Task NextRequest(int totalRequests)

@@ -11,27 +11,28 @@ namespace LoadRunner
 {
     class Program
     {
-        const int NumberOfRequests = 50;
-        const int SimultaneousRequests = 20;
+        const int NumberOfRequests = 600;
+        const int SimultaneousRequests = 100;
         const int WarmUpRequestCount = SimultaneousRequests;
         const int Min = 1000000;
-        const int Max = 3000000;
-        const bool UseFunction = false;
-        const string BaseUrl = "http://localhost:56053/api/Primes?min={0}&max={1}&useFunc={2}";
+        const int Max = 2000000;
+        const bool UseFunction = true;
+        const string UrlBase = "http://localhost:56053/";
+        const string ApiUrl = UrlBase + "api/Primes?min={0}&max={1}&useFunc={2}";
         const string OutputFile = "results-{0}.csv";
         //static Stopwatch _sw;
 
         static async Task Main(string[] args)
         {
             Console.WriteLine("Warming up");
-            var warmup = new RequestCounter(10, BaseUrl, 0, 10000, UseFunction, false);
+            var warmup = new RequestCounter(SimultaneousRequests, ApiUrl, 0, 10000, UseFunction, false);
             await warmup.MakeRequests(WarmUpRequestCount);
 
             Console.WriteLine("Warmup completed, starting test");
 
-            var requests = new RequestCounter(SimultaneousRequests, BaseUrl, Min, Max, UseFunction, true);
+            var requests = new RequestCounter(SimultaneousRequests, ApiUrl, Min, Max, UseFunction, true);
             var task = requests.MakeRequests(NumberOfRequests);
-            var mainPage = new RequestCounter("http://localhost:56053", false);
+            var mainPage = new RequestCounter(UrlBase, false);
             var mainPageTask = mainPage.MakeRecurringRequest(100, -1);
             await task;
 
@@ -39,7 +40,7 @@ namespace LoadRunner
             await mainPageTask;
 
             double requestAvg = requests.TotalTime / NumberOfRequests;
-            Console.WriteLine($"Successfully completed {requests.SuccessfulRequests}/{NumberOfRequests} requests, avg/request: {requestAvg}");
+            Console.WriteLine($"Successfully completed {requests.SuccessfulRequests}/{NumberOfRequests} requests in {requests.RequestStopWatch.ElapsedMilliseconds}, avg/request: {requestAvg}");
 
             double mainPageAvg = mainPage.TotalTime / mainPage.SuccessfulRequests;
             Console.WriteLine($"Main page was loaded {mainPage.SuccessfulRequests} with an average load time of {mainPageAvg}");

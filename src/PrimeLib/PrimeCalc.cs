@@ -7,23 +7,33 @@ using System.Threading.Tasks;
 
 namespace PrimeLib
 {
+    public class MinMaxPair
+    {
+        public long Min { get; set; }
+        public long Max { get; set; }
+    }
+
     public static class PrimeCalc
     {
         public static string GetPrimesAsJson(long min, long max)
         {
-            List<long> primes = GetPrimes(min, max);
+            var primes = GetPrimes(min, max);
 
             return JsonConvert.SerializeObject(primes);
         }
 
-        public static List<long> GetPrimes(long min, long max)
+        public static MinMaxPair GetPrimes(long min, long max)
         {
-            var primes = new List<long>();
+            var primes = new MinMaxPair { Min = long.MaxValue, Max = long.MinValue };
             for (long x = min; x <= max; x++)
             {
                 if (IsPrime(x))
                 {
-                    primes.Add(x);
+                    if (x < primes.Min)
+                    {
+                        primes.Min = x;
+                    }
+                    primes.Max = x;
                 }
             }
 
