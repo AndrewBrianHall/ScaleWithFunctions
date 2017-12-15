@@ -16,41 +16,46 @@ namespace LoadRunner
 
     class RequestCounter
     {
+        object _lockObj = new object();
+        int _simultaneousRequests;
+        bool _logRequests;
+
         public List<RequestRecord> RequestHistory = new List<RequestRecord>();
 
-        object lockObj = new object();
         private long _totalTime = 0;
         public long TotalTime
         {
-            get { lock (lockObj) { return _totalTime; } }
-            set { lock (lockObj) { _totalTime = value; } }
+            get { lock (_lockObj) { return _totalTime; } }
+            set { lock (_lockObj) { _totalTime = value; } }
         }
         int _madeRequests = 0;
         public int MadeRequests
         {
-            get { lock (lockObj) { return _madeRequests; } }
-            set { lock (lockObj) { _madeRequests = value; } }
+            get { lock (_lockObj) { return _madeRequests; } }
+            set { lock (_lockObj) { _madeRequests = value; } }
         }
         int _successfulRequests = 0;
         public int SuccessfulRequests
         {
-            get { lock (lockObj) { return _successfulRequests; } }
-            set { lock (lockObj) { _successfulRequests = value; } }
+            get { lock (_lockObj) { return _successfulRequests; } }
+            set { lock (_lockObj) { _successfulRequests = value; } }
         }
 
-        int _simultaneousRequests;
         public string Url { get; set; }
 
         CancellationTokenSource _tokenSource;
 
-        public RequestCounter(string url)
+        public RequestCounter(string url, bool logRequests)
         {
             Url = url;
+            _logRequests = logRequests;
         }
 
-        public RequestCounter(int simultaneousRequests, string url, int min, int max, bool useFunction)
+        public RequestCounter(int simultaneousRequests, string url, int min, int max, bool useFunction, bool logRequests)
         {
             _simultaneousRequests = simultaneousRequests;
+            _logRequests = logRequests;
+
             Url = string.Format(url, min, max, useFunction);
 
         }
@@ -104,7 +109,7 @@ namespace LoadRunner
 
         async Task MakeRequest()
         {
-            Console.WriteLine($"Starting request {MadeRequests}");
+            LogMessage($"Starting request {MadeRequests}");
             var begin = DateTime.Now;
             var sw = Stopwatch.StartNew();
             try
@@ -113,17 +118,25 @@ namespace LoadRunner
                 var resp = await req.GetResponseAsync() as HttpWebResponse;
                 if (resp.StatusCode == HttpStatusCode.OK)
                 {
-                    Console.WriteLine($"Succeeded in {sw.ElapsedMilliseconds}");
+                    LogMessage($"Succeeded in {sw.ElapsedMilliseconds}");
                     SuccessfulRequests++;
                 }
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Request failed: " + ex.Message);
+                LogMessage("Request failed: " + ex.Message, true);
             }
             sw.Stop();
             RequestHistory.Add(new RequestRecord() { TimeStamp = begin, Url = Url, Duration = sw.ElapsedMilliseconds});
             TotalTime += sw.ElapsedMilliseconds;
+        }
+
+        private void LogMessage(string message, bool error = false)
+        {
+            if (_logRequests || error)
+            {
+                Console.WriteLine(message);
+            }
         }
     }
 }

@@ -11,27 +11,27 @@ namespace LoadRunner
 {
     class Program
     {
-        const int WarmUpRequestCount = 10;
-        const int NumberOfRequests = 30;
-        const int SimultaneousRequests = 10;
+        const int NumberOfRequests = 50;
+        const int SimultaneousRequests = 20;
+        const int WarmUpRequestCount = SimultaneousRequests;
         const int Min = 1000000;
         const int Max = 3000000;
         const bool UseFunction = false;
         const string BaseUrl = "http://localhost:56053/api/Primes?min={0}&max={1}&useFunc={2}";
-        const string OutputFile = "results.csv";
+        const string OutputFile = "results-{0}.csv";
         //static Stopwatch _sw;
 
         static async Task Main(string[] args)
         {
             Console.WriteLine("Warming up");
-            var warmup = new RequestCounter(10, BaseUrl, 0, 10000, UseFunction);
+            var warmup = new RequestCounter(10, BaseUrl, 0, 10000, UseFunction, false);
             await warmup.MakeRequests(WarmUpRequestCount);
 
             Console.WriteLine("Warmup completed, starting test");
 
-            var requests = new RequestCounter(SimultaneousRequests, BaseUrl, Min, Max, UseFunction);
+            var requests = new RequestCounter(SimultaneousRequests, BaseUrl, Min, Max, UseFunction, true);
             var task = requests.MakeRequests(NumberOfRequests);
-            var mainPage = new RequestCounter("http://localhost:56053");
+            var mainPage = new RequestCounter("http://localhost:56053", false);
             var mainPageTask = mainPage.MakeRecurringRequest(100, -1);
             await task;
 
@@ -44,7 +44,8 @@ namespace LoadRunner
             double mainPageAvg = mainPage.TotalTime / mainPage.SuccessfulRequests;
             Console.WriteLine($"Main page was loaded {mainPage.SuccessfulRequests} with an average load time of {mainPageAvg}");
 
-            await PrintResults(OutputFile, new List<RequestCounter>() { requests, mainPage });
+            var outputFile = UseFunction ? string.Format(OutputFile, "function") : string.Format(OutputFile, "local");
+            await PrintResults(outputFile, new List<RequestCounter>() { requests, mainPage });
         }
 
         static async Task PrintResults(string outputFile, List<RequestCounter> counters)
