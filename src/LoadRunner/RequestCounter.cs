@@ -106,6 +106,7 @@ namespace LoadRunner
                 tasks.Add(task);
             }
             await Task.WhenAll(tasks);
+
             RequestStopWatch.Stop();
             LoadEnd = DateTime.Now;
         }

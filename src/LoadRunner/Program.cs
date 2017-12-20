@@ -17,7 +17,7 @@ namespace LoadRunner
         const int WarmUpRequestCount = SimultaneousRequests;
         const int Min = 1000000;
         const int Max = 2000000;
-        const bool UseFunction = false;
+        const bool UseFunction = true;
         const string UrlBase = "http://localhost:56053/";
         const string ApiUrl = UrlBase + "api/Primes?min={0}&max={1}&useFunc={2}";
         const string OutputFile = "results-{0}-{1}.csv";

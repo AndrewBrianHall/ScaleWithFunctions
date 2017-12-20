@@ -9,14 +9,13 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using System.Web.Http;
 using PrimeLib;
-using WebApplication.Models;
+using WebApplication.App_Start;
 
 namespace WebApplication.Controllers
 {
 
     public class PrimesController : ApiController
     {
-        private static Secrets _secrets = new Secrets();
         private const string FunctionKeyHeader = "x-functions-key";
 
         // GET api/<controller>/5
@@ -24,13 +23,13 @@ namespace WebApplication.Controllers
         {
             string primes;
 
-             if (useFunc)
+            if (useFunc)
             {
                 primes = await GetPrimes(min, max);
             }
             else
             {
-                primes =PrimeCalc.GetPrimesAsJson(min, max);
+                primes = PrimeCalc.GetPrimesAsJson(min, max);
             }
 
             return primes;
@@ -38,23 +37,16 @@ namespace WebApplication.Controllers
 
         private async Task<string> GetPrimes(long min, long max)
         {
-            var code = _secrets[FunctionKeyHeader];
+            var code = AppSecrets.Secrets[FunctionKeyHeader];
             var baseUrl = ConfigurationManager.AppSettings["PrimeFunctionUrl"];
             var url = baseUrl + $"?min={min}&max={max}";
             var req = WebRequest.Create(url);
             req.Headers.Add(FunctionKeyHeader, code);
             var resp = await req.GetResponseAsync() as HttpWebResponse;
-            var str = new StreamReader(resp.GetResponseStream(), System.Text.Encoding.GetEncoding(resp.CharacterSet));
-            var json = await str.ReadToEndAsync();
-            var standardized = UnescapeResult(json);
-            return standardized;
+            var jsonResult = await HttpHelper.GetJsonAsync(resp);
+            return jsonResult;
         }
 
-        private string UnescapeResult(string json)
-        {
-            var final = json.Substring(1, json.Length - 2).Replace("\\", "");
-            return final;
-        }
     }
 
 }

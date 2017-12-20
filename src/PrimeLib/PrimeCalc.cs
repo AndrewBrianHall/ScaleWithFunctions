@@ -7,12 +7,6 @@ using System.Threading.Tasks;
 
 namespace PrimeLib
 {
-    public class MinMaxPair
-    {
-        public long Min { get; set; }
-        public long Max { get; set; }
-    }
-
     public static class PrimeCalc
     {
         public static string GetPrimesAsJson(long min, long max)

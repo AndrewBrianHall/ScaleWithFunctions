@@ -5,9 +5,9 @@ using System.IO;
 using System.Linq;
 using System.Web;
 
-namespace WebApplication.Models
+namespace WebApplication.App_Start
 {
-    class Secrets
+    public class Secrets
     {
         Dictionary<string, string> _secrets;
 
@@ -29,5 +29,11 @@ namespace WebApplication.Models
                 _secrets = JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
             }
         }
+    }
+
+    public class AppSecrets
+    {
+        public static Secrets Secrets { get; private set; } = new Secrets();
+
     }
 }
