@@ -14,12 +14,18 @@ namespace LoadRunner
         public long Duration { get; set; }
     }
 
+    enum RequestCounterTypes { Load, Continuous}
+
     class RequestCounter
     {
         object _lockObj = new object();
         int _simultaneousRequests;
         bool _logRequests;
         CancellationTokenSource _tokenSource;
+
+        public RequestCounterTypes CounterType { get; set; }
+        public DateTime LoadStart { get; private set; }
+        public DateTime LoadEnd { get; private set; }
 
         public List<RequestRecord> RequestHistory = new List<RequestRecord>();
         public Stopwatch RequestStopWatch { get; private set; }
@@ -47,8 +53,10 @@ namespace LoadRunner
 
         public RequestCounter(string url, bool logRequests)
         {
-            Url = url;
             _logRequests = logRequests;
+
+            this.Url = url;
+            this.CounterType = RequestCounterTypes.Continuous;
         }
 
         public RequestCounter(int simultaneousRequests, string url, int min, int max, bool useFunction, bool logRequests)
@@ -56,8 +64,8 @@ namespace LoadRunner
             _simultaneousRequests = simultaneousRequests;
             _logRequests = logRequests;
 
-            Url = string.Format(url, min, max, useFunction);
-
+            this.Url = string.Format(url, min, max, useFunction);
+            this.CounterType = RequestCounterTypes.Load;
         }
 
         public void Stop()
@@ -89,6 +97,8 @@ namespace LoadRunner
         public async Task MakeRequests(int numberOfRequests)
         {
             var tasks = new List<Task>();
+            LoadStart = DateTime.Now;
+
             RequestStopWatch = Stopwatch.StartNew();
             for (int i = 0; i < _simultaneousRequests; i++)
             {
@@ -97,6 +107,7 @@ namespace LoadRunner
             }
             await Task.WhenAll(tasks);
             RequestStopWatch.Stop();
+            LoadEnd = DateTime.Now;
         }
 
         async Task NextRequest(int totalRequests)
