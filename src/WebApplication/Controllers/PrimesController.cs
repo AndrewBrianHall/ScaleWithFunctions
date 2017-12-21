@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Configuration;
 using System.Diagnostics;
 using System.IO;
@@ -25,7 +26,11 @@ namespace WebApplication.Controllers
 
             if (useFunc)
             {
-                primes = await GetPrimes(min, max);
+                var apiKey = AppSecrets.Secrets[FunctionKeyHeader];
+                var baseUrl = ConfigurationManager.AppSettings["PrimeFunctionUrl"];
+                var headers = new NameValueCollection();
+                headers.Add(FunctionKeyHeader, apiKey);
+                primes = await PrimeHttpHelper.GetJsonAsync(baseUrl, min, max, headers);
             }
             else
             {
@@ -33,18 +38,6 @@ namespace WebApplication.Controllers
             }
 
             return primes;
-        }
-
-        private async Task<string> GetPrimes(long min, long max)
-        {
-            var code = AppSecrets.Secrets[FunctionKeyHeader];
-            var baseUrl = ConfigurationManager.AppSettings["PrimeFunctionUrl"];
-            var url = baseUrl + $"?min={min}&max={max}";
-            var req = WebRequest.Create(url);
-            req.Headers.Add(FunctionKeyHeader, code);
-            var resp = await req.GetResponseAsync() as HttpWebResponse;
-            var jsonResult = await HttpHelper.GetJsonAsync(resp);
-            return jsonResult;
         }
 
     }
